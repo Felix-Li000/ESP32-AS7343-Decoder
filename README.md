@@ -4,14 +4,18 @@ This repository contains the embedded implementation of a spectral-fingerprint�
 
 The system enables real-time classification of stimulus-dependent spectral fingerprints and conditional QR-code decoding. It forms the hardware realization of a molecule–electronics–AI interactive framework in which high-dimensional spectral information is translated into digital cryptographic operations.
 
-The repository contains two independent subprojects:
+The repository contains three independent subprojects:
 
 Repository Structure
 ESP32_AS7343_Decoder_Scanner/
 │
-├── ESP32_AS7343_Decoder_Scanner_trainning/
+├── ESP32_AS7343_Decoder_Scanner trainning/
 │
-└── ESP32_AS7343_Decoder_Scanner/
+├── ESP32_AS7343_Decoder_Scanner/
+│
+└── ESP32_scanner_3class/
+
+Each subproject can be built independently. ESP32_scanner_3class contains its own detailed README.
 
 1. ESP32_AS7343_Decoder_Scanner_trainning
 
@@ -129,3 +133,44 @@ Control ambient illumination during both training and deployment.
 Ensure Edge Impulse model export version matches firmware implementation.
 
 Recalibration is required if optical path or hardware configuration changes.
+
+3. ESP32_scanner_3class
+
+Purpose:
+Three-class spectral decoder with two-stage verification and conditional QR-code scanning. This is the latest deployment firmware; see ESP32_scanner_3class/README.md for full build, wiring, and operating instructions.
+
+This firmware integrates:
+
+AS7343 spectral acquisition (13 selected channels reordered into a 208-dimensional feature vector: 16 acquisitions x 13 channels)
+
+Embedded three-class Edge Impulse classifier (Background / Encrypted / Decrypted)
+
+Two-stage verification under 365 nm UV excitation (stage 1 requires Encrypted, stage 2 requires Decrypted; confidence threshold 0.7)
+
+QR code scanning via UART2 (MD500 scanner)
+
+OLED display and BLE HID keyboard emulation (device name: SpectraQR)
+
+Default pin configuration (this subproject):
+
+AS7343 and OLED (I2C): SDA GPIO 21, SCL GPIO 22
+
+UV LED: GPIO 32
+
+Scanner trigger: GPIO 33
+
+QR scanner (UART2): RX GPIO 16, TX GPIO 17, 57600 baud, 8N1
+
+Button ladder: GPIO 4 (analog input)
+
+Note: this pin assignment differs from subproject 2. Always use the configuration defined in the firmware you are building.
+
+Operational Logic:
+
+Acquire a pristine spectrum under UV excitation and require the Encrypted class.
+
+Apply the stimulus, acquire a second spectrum, and require the Decrypted class.
+
+If both stages pass, unlock QR decoding and display or forward the decoded result.
+
+Any failed stage resets the verification flow to stage 1.
